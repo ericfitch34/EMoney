@@ -1,0 +1,177 @@
+---
+title: "BAIS 496 Assignment 6"
+author: "Eric Fitch"
+date: "5/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Assignment 6: 2018 Advanced Defensive NFL Data 
+
+
+#### __Introduction__
+
+This document will be looking back at 2018 NFL Defensive Player advanced statistics, scraped from Pro Football Reference. I will be looking at different trends from individual players and comparing how they performed during that season. 
+
+
+#### __Packages__
+
+There are a couple of packages that will be critical to use for my analysis:
+
+```{r message=TRUE, echo= FALSE}
+library(tidyverse)
+library(dplyr)
+library(skimr)
+library(stringr)
+library(ggplot2)
+library(knitr)
+library(tibble)
+library(DT)
+library(scales)
+```
+
+#### __Importing the Dataset__
+```{r, warning=FALSE, message=TRUE, echo=FALSE}
+NFL_2018 <- read_csv("NFL Analytics.csv")
+```
+
+# My Analysis {.tabset .tabset-fade .tabset-pills}
+
+## Question 1
+
+Question 1: Who were the best players in pass coverage during the 2018 NFL Season. I will be using statistics such as passer rating allowed, ADOT (Average Depth of Target), cmp% (Completion Percentage), and TD Allowed to evaluate how well a player was in pass coverage using Pro Football Reference's Advanced Statistics page. 
+
+Data Process: I will be using the scraped data from Pro Football Reference and generate some graphs using ggplot in order to further my analysis. Additionally, I will create some formulas to look at a per-game basis, a better indicator of a defender's success over an entire year's stats
+
+Formulas Created: Yards Allowed Per Game: Yards / Games Played
+                  Air Yards Allowed Per Game: Air Yards / Games Played
+                  
+Analysis:
+
+```{r, echo=FALSE}
+NFL_2018$`Yards Allowed/Game` = (NFL_2018$Yds / NFL_2018$G)
+NFL_2018$`Air Yards Allowed/Game` = (NFL_2018$Air / NFL_2018$G)
+
+
+NFL_2018 %>%
+  ggplot(aes(`Air Yards Allowed/Game`, `Yards Allowed/Game`)) +
+  geom_point()+
+  scale_y_continuous(breaks = c(0, 20, 40, 60, 80))+
+  facet_wrap(~ NFL_2018$Tm)+
+  ggtitle("Average Air Yards Allowed vs Pass Yards Allowed Per Game",
+          subtitle = "Sorted by NFL Team during 2018 Season")+
+  xlab("Average Air Yards Allowed/Game")+
+  ylab("Average Yards Allowed/Game")
+
+```
+
+The Results: Looking on a per game basis and looking at each team, I have noticed that typically Air Yards Allowed Per Game and Average Yards Allowed Per Game are correlated, with a few exceptions such as the San Fransisco 49ers and the Seattle Seahawks. One thing to point out on Air Yards is that it is how far the ball is traveled in the air before getting caught, which could indicate some pass coverage breakdowns if heaved and completed at a long rate. 
+
+Statistical/Analytical Method: I would go further into this by trying to scrape some play-by-play data using the nflscrapR Package and see if correlation is the same on a per game basis as on a per-play-basis. I would also run a T-Test and look at p-values to find indicators that are evident to how Air Yards Allowed per game contributes to yards allowed per game. 
+
+
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+
+NFL_2018 %>%
+  ggplot(aes(`Yds/Cmp`, `Yds/Tgt`)) +
+  geom_point()+
+  scale_y_continuous(breaks = c(-10, 0, 10, 20, 30, 40))+
+  facet_wrap(~ NFL_2018$Tm)+
+  ggtitle("Yards Per Completion vs Yards Per Target Allowed",
+          subtitle = "Sorted by NFL Team during 2018 Season")+
+  xlab("Yards Per Completion Allowed")+
+  ylab("Yards Per Target Allowed")
+
+```
+
+The Results: Similiar to comparing Air Yards Allowed Per Game and Passing Yards Allowed per game, there is a pretty good indication that if you are allowing a completion that has a higher average depth of target, there is also a more than likely chance that it will be completed longer. Not doing on this on a play-by-play basis is more harder to determine expectancy between each team, but we can see that teams such as the Giants, Panthers, Broncos, and Vikings all seem to have similarities when it comes to allowing depth of target and allowing a pass to be completed downfield. 
+
+Analytical Method: With further analysis, I would use an ANOVA test to test freqeuncy on what is a root cause behind a ball traveling farther in the real may or will result in a longer completed pass than a shorter one. I will also look to do a regression analysis and then dive into individual players to see how each team fares based on these defensive passing metrics. 
+
+
+
+## Question 2
+
+Question 2: I will be looking at the efficiency of tackling and see if the opportunities of getting a tackle increase of decrease the chances of a defensive player missing a tackle on the ball carrier? I am curious to see how it is on a per 16 game basis, using this data. 
+
+Data Process: Using scraped data from Pro Football Reference of this 2018 season will help identify who are some of the best and some of the worst based on the number of combined tackles made by a defender during the 2018 NFL Season. I will be using combined tackles (Comb), Miss Tackle Percentage (Mtkl%), the age of the defender, and will also be looking by position as well. 
+
+Data Wrangling: I will be using the dplyr function and also the ggplot2 function for this part of the analysis. In addition, I have to change the MTKL% to a numeric factor in order to use it in my ggplot graph. 
+
+Analysis: 
+
+```{r, echo= FALSE, message=FALSE, warning=FALSE}
+NFL_2018$`MTkl%` = as.numeric(gsub("[\\%,]", "", NFL_2018$`MTkl%`))
+
+NFL_2018 %>% filter(Pos %in% c("LB", "DE", "CB"))%>% group_by(Pos)%>%
+  ggplot(aes(MTkl,Comb, color=Pos)) +
+  geom_point()+
+  geom_smooth()+
+  labs(color = "Position") +
+  ggtitle("Missed Tackles vs Total Tackles",
+  subtitle = "2018 NFL Tackling by Position")+
+  xlab("Missed Tackles")+
+  ylab("Total Tackles")
+```
+
+Results: One of the things that I noticed about this graph was that it was very sporadic when comparing the three different positons I filtered. I would like to point out that tackling in the NFL does not seem consistent, as shown by this 2018 Data. I  notcied that as the more amount of tackles are being made by a player, specifically for positions that do not even get that many opportunities such as DE (Defensive End), I am not surprised since teams have been running the ball less and throwing the ball more. As shown with LB (Linebackers), there will be more frequent times a LB does not miss a tackle compared to positions such as CB, who are not known as a tackling position. 
+
+Statistical/Analytical Method: I will also look to the nflscrapR Package to dive deeper into this data and look at a play-by-play basis and see if there is the same correlation. I could also run an ANOVA test to test variance between different players and the frequency of which a player either misses a tackle or not. I can also do a regression analysis and find the relationship between one or more independent variables and forecast to see how efficient a defensive player is at tackling.
+
+
+```{r, echo= FALSE, message=FALSE, warning=FALSE}
+
+NFL_2018 %>% filter(Pos %in% c("DT", "MLB", "FS", "SS"))%>% group_by(Pos)%>%
+  ggplot(aes(MTkl,Comb, color=Pos)) +
+  geom_point()+
+  geom_smooth()+
+  labs(color = "Position") +
+  ggtitle("Missed Tackles vs Total Tackles",
+  subtitle = "2018 NFL Tackling by Position")+
+  xlab("Missed Tackles")+
+  ylab("Total Tackles")
+```
+
+Results: Looking at different positions this time, I decided to compare between at least one position that plays on each level of the defense. Looking at DT (Defensive Tackle), I noticed that due to the lack of opportunties to tackle ball carriers, it was not as well fit. They do not miss the ball carrier too much, one reason just to use from this data is that playing on the front seven helps miss less tackles then playing in the backend of the secondary, such as the FS (Free Safety) and the SS (Strong Safety). 
+
+Statistical/Analytical Method: Similiar to as what I was saying on my other graph, I will plan on looking to dive more into the nflscrapR Package to dive deeper into this data and look at a play-by-play basis and see if there is the same correlation. I could also run an ANOVA test to test variance between different players and the frequency of which a player either misses a tackle or not. I can also do a regression analysis and find the relationship between one or more independent variables and forecast to see how efficient a defensive player is at tackling.
+
+
+## Question 3
+
+Question 3: : What defensive lineman are the best at pressuring the QB in 2018?
+
+Data Process: Will use scraped data from Pro Football Reference to find out who had the most pressures and was productive at rushing the passer during the 2018 NFL Season. I will be filtering by position, specifically the defensive line using dplyr and graphing through ggplot2 package. 
+
+Data Wrangling: I will not need to do much data wrangling for this type of analysis, but will be using the both the dplyr and the ggplot2 package for this type of analysis.
+
+Analysis:
+
+```{r, echo= FALSE, message=FALSE, warning=FALSE}
+NFL_2018 %>% filter(Pos %in% c("DE", "DT", "LB", "MLB"))%>% group_by(Pos)%>%
+  ggplot(aes(Bltz, Prss, color = Pos))+
+  geom_point()+
+  labs(color = "Position") +
+  ggtitle("Success of Pressure Opportunties by Front Seven",
+  subtitle = "2018 NFL Player Pressure Data")+
+  xlab("Number of Blitzes")+
+  ylab("QB Pressures")
+```
+
+
+
+
+
+```{r, echo=FALSE}
+table <- NFL_2018 %>% select(Player, Prss, Pos, Tm, Bltz, Hrry, Sk) %>% arrange(desc(Prss)) %>% head(20) 
+kable(table)
+```
+
+
+Results: The majority of defensive lineman produced the most amount of pressures during the 2018 season. Once again, as shown in his Pro Football Focus grades, Aaron Donald is a one man wrecking crew for the Los Angeles Rams, piling up 70 pressures and 20 sacks during the 2018 campaign. I also notice here that the Kansas City Chiefs, Philadelphia Eagles, and Houston Texans each have two players ranked in the top 15 in pressures during the entire 2018 season, something that gives their team an edge when trying to force the QB to make a poor decision. 
+
+Statistical Method/Analysis: I will look to dive deeper into the pressure data by going into the NFLscrapR Package and then performing some regression analysis, as well as performing a nonlinear model and possibly use a piecewise function to help describe the nature of finding different methods in which a defensive player can be good at rushing the passer.  
